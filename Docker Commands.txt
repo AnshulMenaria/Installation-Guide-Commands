@@ -1,0 +1,34 @@
+Docker Commands:
+---------------------------------------------------------------------------------------------------
+Pulling Docker Image:
+	docker pull image_name
+
+Creating Container From Image:
+	docker run image_name /bin/bash
+
+Creating & Interacting Container:
+	docker run -it image_name /bin/bash
+
+Creating Container & Giving Name:
+	docker run --name name image_name /bin/bash
+
+Exiting From Container:
+	exit
+
+List Active Containers:
+	docker ps
+
+List All Container:
+	docker ps -a
+
+Starting Container:
+	docker start container_name
+
+Entering Container:
+	docker attach container_name
+
+Deleting Container:
+	docker rm container_name
+
+Deleting Image:
+	docker rmi image_name
