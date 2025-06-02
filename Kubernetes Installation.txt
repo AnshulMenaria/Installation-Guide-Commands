@@ -1,0 +1,42 @@
+# Update system packages and upgrade existing ones
+sudo apt update && sudo apt upgrade -y
+
+# Install dependencies for secure package downloads
+sudo apt install -y apt-transport-https ca-certificates curl gnupg
+
+# Install Docker as the container runtime for Kubernetes
+sudo apt install -y docker.io
+
+# Add Kubernetes GPG key to the system
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | sudo gpg --dearmor -o /usr/share/keyrings/kubernetes-archive-keyring.gpg
+
+# Add Kubernetes APT repository to the sources list
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+# Update package list with new Kubernetes repository
+sudo apt update
+
+# Install Kubernetes components: kubelet, kubeadm, kubectl
+sudo apt install -y kubelet kubeadm kubectl
+
+# Prevent kubelet, kubeadm, and kubectl from being automatically updated
+sudo apt-mark hold kubelet kubeadm kubectl
+
+# Disable swap (Kubernetes requires swap to be off)
+sudo swapoff -a
+
+# Remove swap entry from /etc/fstab to make swap off permanent
+sudo sed -i '/swap/d' /etc/fstab
+
+# (Optional: Initialize cluster networking with Flannel CNI)
+kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml --validate=false
+
+# Switch to root user (optional, for easier admin access)
+sudo -i
+
+# -------- For Master Node Only --------
+# Initialize the Kubernetes master node
+kubeadm init
+
+# (Optional) Restart kubelet service if needed
+sudo systemctl restart kubelet
