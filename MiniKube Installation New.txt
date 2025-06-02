@@ -1,0 +1,19 @@
+#MiniKube Installation:
+
+# Update system packages
+sudo apt update
+
+# Install Docker (Minikube uses it as default container runtime)
+sudo apt install -y docker.io
+sudo usermod -aG docker $USER && newgrp docker
+
+# Install kubectl (client)
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# Download latest Minikube release
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+
+# Start Minikube using Docker driver
+minikube start --driver=docker
