@@ -1,0 +1,162 @@
+ConfigMap:
+
+Stores non-sensitive configuration data like env variables and app settings (key-value format).
+
+Helps decouple config from app code and supports dynamic changes.
+
+Used in Pods as environment variables or volumes for sharing config.
+
+----------------------------------------
+Create from literals:
+	
+	kubectl create configmap config_name --from-literal=ENV=dev --from-literal=PORT=3000
+
+Create From File:
+
+	kubectl create configmap config_name --from-file=filename
+
+View ConfigMaps:
+
+	kubectl get configmap
+
+Delete Confingmap:
+
+	kubectl delete configmap config_name
+
+-----------------------------------------------------------------------------------------------------------------------
+Secrets:
+
+Stores sensitive data like passwords, API keys, and tokens (base64 encoded).
+
+Secures confidential values and keeps them out of logs and source code.
+
+Injected into Pods via env variables or volumes, just like ConfigMaps.
+
+----------------------------------------
+Create Secret From literals:
+
+	kubectl create secret generic secret_name --from-literal=DB_USER=admin --from-literal=DB_PASS=mypassword
+
+Create From File: 
+
+	kubectl create secret generic secret_name --from-file=filename
+
+Delete: 
+
+	kubectl delete secret secret_name
+
+-----------------------------------------------------------------------------------------------------------------------
+Labels:
+
+
+Key-value pairs attached to Kubernetes objects (Pods, Services, etc.) for identification and grouping.
+
+Used by selectors to filter and target specific resources.
+
+Help with organization, monitoring, and automation in large clusters.
+
+----------------------------------------
+Add Label to a Pod:
+	
+	kubectl label pod pod_name label_name=name
+
+Update Labels:
+
+	kubectl label pod pod_name label_name=name --overwrite
+
+Remove Label from a pod:
+
+	kubectl label pods pod_name label_name-
+
+View Pods by Labels:
+
+	kubectl get pods -l name=name
+
+View All Labels Of Pods:
+	
+	kubectl get pods --show-labels
+
+-----------------------------------------------------------------------------------------------------------------------
+Node Selector:
+
+Used to assign Pods to specific Nodes based on labels (e.g., zone, hardware type).
+
+Ensures apps run on compatible Nodes (e.g., GPU nodes, SSD nodes).
+
+Set using nodeSelector in Pod/Deployment YAML.
+
+----------------------------------------
+First Label a node so selecter can select using pod
+
+when creating task add node selecter in yaml file in specification 
+
+spec:
+  nodeSelector:
+    hardware: t2.medium
+
+-----------------------------------------------------------------------------------------------------------------------
+Namespace:
+
+Provide logical isolation for Kubernetes resources — useful for teams, environments (dev, QA, prod).
+
+Help organize resources and apply policies like RBAC and ResourceQuotas.
+
+Default is default, but you can create custom ones for better separation.
+
+----------------------------------------
+Create Namespace:
+
+	kubectl create namespace namespace_name
+
+Get namespaces:
+	
+	kubectl get namespace
+
+Delete a namespace:
+
+	kubectl delete namespace namespace_name
+
+Run Task With NameSpace:
+	
+	kubectl apply -f filename -n namespace_name
+
+-----------------------------------------------------------------------------------------------------------------------
+Resource Quota:
+
+Limits how much resources (CPU, memory, pods, etc.) a namespace can use.
+
+Helps control and distribute cluster resources fairly in multi-team setups.
+
+Defined per namespace using ResourceQuota objects.
+
+----------------------------------------
+
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: dev-quota
+  namespace: dev
+spec:
+  hard:
+    pods: "10"
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "4"
+    limits.memory: 8Gi
+
+This quota says:
+
+Max 10 Pods in the dev namespace.
+
+Total requested CPU across all Pods ≤ 2 cores.
+
+Total CPU limits across all Pods ≤ 4 cores.
+
+Total requested and limited memory also capped.
+
+----------------------------------------
+How to Check Quota Usage?
+
+kubectl get resourcequota -n dev
+kubectl describe resourcequota dev-quota -n dev
+	
