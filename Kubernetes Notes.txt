@@ -1,162 +1,586 @@
-ConfigMap:
+1️⃣ Namespace (Logical separation inside cluster)
 
-Stores non-sensitive configuration data like env variables and app settings (key-value format).
+Divides cluster into multiple virtual clusters.
 
-Helps decouple config from app code and supports dynamic changes.
+Isolates resources between teams or projects.
 
-Used in Pods as environment variables or volumes for sharing config.
+Used for RBAC, quotas, and resource management.
 
-----------------------------------------
-Create from literals:
-	
-	kubectl create configmap config_name --from-literal=ENV=dev --from-literal=PORT=3000
+Default namespace exists if you don’t specify one.
 
-Create From File:
-
-	kubectl create configmap config_name --from-file=filename
-
-View ConfigMaps:
-
-	kubectl get configmap
-
-Delete Confingmap:
-
-	kubectl delete configmap config_name
-
------------------------------------------------------------------------------------------------------------------------
-Secrets:
-
-Stores sensitive data like passwords, API keys, and tokens (base64 encoded).
-
-Secures confidential values and keeps them out of logs and source code.
-
-Injected into Pods via env variables or volumes, just like ConfigMaps.
-
-----------------------------------------
-Create Secret From literals:
-
-	kubectl create secret generic secret_name --from-literal=DB_USER=admin --from-literal=DB_PASS=mypassword
-
-Create From File: 
-
-	kubectl create secret generic secret_name --from-file=filename
-
-Delete: 
-
-	kubectl delete secret secret_name
-
------------------------------------------------------------------------------------------------------------------------
-Labels:
+---------------------------------------------------
 
 
-Key-value pairs attached to Kubernetes objects (Pods, Services, etc.) for identification and grouping.
+kubectl create namespace dev                 # Create namespace called "dev"
+kubectl get namespaces                       # List all namespaces
+kubectl describe namespace dev               # Show detailed info of "dev" namespace
+kubectl delete namespace dev                  # Delete the "dev" namespace
 
-Used by selectors to filter and target specific resources.
+ ---------------------------------------------------
 
-Help with organization, monitoring, and automation in large clusters.
+apiVersion: v1               # Kubernetes API version
+kind: Namespace              # Object type: Namespace
+metadata:
+  name: dev                  # Namespace name = "dev"
+  labels:
+    env: development         # Labels help categorize namespaces
+------------------------------------------------------------------------------------------------------
 
-----------------------------------------
-Add Label to a Pod:
-	
-	kubectl label pod pod_name label_name=name
+2️⃣ ConfigMap (Non-sensitive config data)
 
-Update Labels:
+Holds app config like ENV variables, URLs, ports.
 
-	kubectl label pod pod_name label_name=name --overwrite
+Keeps config separate from app logic.
 
-Remove Label from a pod:
+Can be consumed as env vars or config files by pods.
 
-	kubectl label pods pod_name label_name-
+Not for passwords or sensitive data (use Secrets).
 
-View Pods by Labels:
+---------------------------------------------------
 
-	kubectl get pods -l name=name
+kubectl create configmap my-config --from-literal=MODE=dev   # kubectl: k8s command-line tool, create configmap: create configmap resource, my-config: name of the ConfigMap,
+ --from-literal=MODE=dev: add key=MODE and value=dev
 
-View All Labels Of Pods:
-	
-	kubectl get pods --show-labels
+kubectl create configmap my-config --from-file=config.txt  # --from-file=config.txt: create configmap entry from file contents
 
------------------------------------------------------------------------------------------------------------------------
-Node Selector:
+kubectl get configmap                                 # List all configmaps
+kubectl describe configmap my-config                  # Show details of my-config
+kubectl delete configmap my-config                    # Delete my-config
 
-Used to assign Pods to specific Nodes based on labels (e.g., zone, hardware type).
+---------------------------------------------------
 
-Ensures apps run on compatible Nodes (e.g., GPU nodes, SSD nodes).
+apiVersion: v1                  # API version
+kind: ConfigMap                 # Object type
+metadata:
+  name: my-config               # ConfigMap name
+  namespace: default            # Namespace (optional, default is "default")
+  labels:
+    type: app-config            # Label key-value pairs
+    env: dev
+  annotations:
+    purpose: "Non-sensitive app config"
+data:
+  MODE: dev                    # Key-value pair inside configmap
+  PORT: "3000"                # Quoted string values recommended
 
-Set using nodeSelector in Pod/Deployment YAML.
+------------------------------------------------------------------------------------------------------
 
-----------------------------------------
-First Label a node so selecter can select using pod
+3️⃣ Secret (Sensitive data storage)
 
-when creating task add node selecter in yaml file in specification 
+Stores passwords, tokens, keys securely.
 
+Data encoded in base64 (not encrypted by default).
+
+Used as env vars or mounted files in pods.
+
+Prevents accidental logging of secrets.
+
+---------------------------------------------------
+
+kubectl create secret generic my-secret --from-literal=DB_PASS=pass123
+# create secret: creates a secret resource
+# generic: secret type for arbitrary key-values
+# my-secret: secret name
+# --from-literal=DB_PASS=pass123: add key DB_PASS with value pass123
+
+kubectl create secret generic my-secret --from-file=secret.txt  
+# --from-file=secret.txt: create secret from file contents
+
+kubectl get secret                             # List all secrets
+kubectl describe secret my-secret              # Show metadata & base64 data keys
+kubectl delete secret my-secret                 # Delete secret
+
+---------------------------------------------------
+
+apiVersion: v1                    # API version
+kind: Secret                     # Object type
+metadata:
+  name: my-secret                # Secret name
+  namespace: default             # Namespace (default if omitted)
+  labels:
+    env: prod
+    purpose: credentials
+stringData:                      # Allows plain text input; will be base64 encoded
+  DB_USER: admin
+  DB_PASS: pass123
+
+------------------------------------------------------------------------------------------------------
+
+4️⃣ Pod (Smallest deployable unit)
+
+One or more containers running together.
+
+Containers share network and storage.
+
+Pods are ephemeral and managed by controllers.
+
+Pods can be debugged and interacted with.
+
+---------------------------------------------------
+
+kubectl run nginx-pod --image=nginx:latest      
+# run: create and run pod or deployment
+# nginx-pod: pod name
+# --image=nginx:latest: container image to run
+
+kubectl get pods                                  # List pods
+kubectl get pods -o wide                          # Show detailed info (IP, node, etc)
+kubectl describe pod nginx-pod                    # Show detailed pod info
+kubectl logs nginx-pod                            # View logs of pod's containers
+kubectl exec -it nginx-pod --                 # Open terminal inside pod (if  exists)
+kubectl delete pod nginx-pod                      # Delete pod
+
+---------------------------------------------------
+
+apiVersion: v1                  # API version
+kind: Pod                      # Object type
+metadata:
+  name: nginx-pod              # Pod name
+  namespace: default           # Namespace
+spec:
+  containers:
+    - name: nginx-container   # Container name inside pod
+      image: nginx:latest     # Container image to run
+      ports:
+        - containerPort: 80   # Port exposed inside container
+
+------------------------------------------------------------------------------------------------------
+
+5️⃣ ReplicaSet (Ensure desired pod count)
+
+Makes sure specified number of pod replicas are running.
+
+Creates or deletes pods automatically to match replicas.
+
+Uses label selectors to manage pods.
+
+Usually managed by Deployments (you rarely create manually).
+
+---------------------------------------------------
+
+kubectl create -f replicaset.           # Create ReplicaSet from  file
+kubectl get rs                              # List ReplicaSets
+kubectl describe rs my-rs                   # Describe ReplicaSet
+kubectl delete rs my-rs                     # Delete ReplicaSet
+
+---------------------------------------------------
+
+apiVersion: apps/v1                 # API group & version
+kind: ReplicaSet                   # Object type
+metadata:
+  name: my-rs                     # ReplicaSet name
+  namespace: default
+spec:
+  replicas: 3                    # Desired number of pod replicas
+  selector:
+    matchLabels:
+      app: nginx                 # Select pods with label app=nginx
+  template:                      # Pod template to create new pods
+    metadata:
+      labels:
+        app: nginx               # Labels assigned to pods created
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:latest
+          ports:
+            - containerPort: 80
+
+------------------------------------------------------------------------------------------------------
+
+6️⃣ Deployment (Manages ReplicaSets, supports updates)
+
+Manages ReplicaSets and Pods for declarative updates.
+
+Supports rolling updates and rollbacks.
+
+Declaratively defines desired state for your app.
+
+Handles scaling and pod lifecycle.
+
+---------------------------------------------------
+
+kubectl create -f deployment.                   # Create deployment
+kubectl get deployments                             # List deployments
+kubectl describe deployment my-deploy               # Show deployment details
+kubectl rollout status deployment/my-deploy         # Check rollout progress
+kubectl rollout undo deployment/my-deploy           # Rollback deployment
+kubectl scale deployment my-deploy --replicas=5     # Scale pods to 5
+kubectl delete deployment my-deploy                  # Delete deployment
+
+---------------------------------------------------
+
+apiVersion: apps/v1                 # API group & version
+kind: Deployment                  # Object type
+metadata:
+  name: my-deploy                # Deployment name
+  namespace: default
+spec:
+  replicas: 3                   # Desired pod replicas
+  selector:
+    matchLabels:
+      app: nginx                # Matches pods with label app=nginx
+  template:                    # Pod template for creating pods
+    metadata:
+      labels:
+        app: nginx              # Labels for created pods
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:latest
+          ports:
+            - containerPort: 80
+
+------------------------------------------------------------------------------------------------------
+
+7️⃣ StatefulSet (Pods with stable IDs & storage)
+
+Manages pods with unique, persistent IDs and storage.
+
+Used for stateful apps like databases.
+
+Pods are created/deleted in order (stable network IDs).
+
+Supports persistent volume claims per pod.
+
+---------------------------------------------------
+
+kubectl create -f statefulset.                 # Create StatefulSet
+kubectl get statefulsets                            # List StatefulSets
+kubectl describe statefulset my-statefulset         # Show details
+kubectl delete statefulset my-statefulset           # Delete StatefulSet
+
+---------------------------------------------------
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: my-statefulset
+spec:
+  serviceName: "my-service"           # Headless service for network identity
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: mycontainer
+        image: myimage:latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
+
+------------------------------------------------------------------------------------------------------
+
+8️⃣ DaemonSet (One pod per node)
+
+Runs one pod on every (or selected) node.
+
+Useful for logging, monitoring agents, or network plugins.
+
+Automatically adds pods on new nodes.
+
+Manages pod lifecycle on nodes.
+
+---------------------------------------------------
+
+kubectl create -f daemonset.                     # Create DaemonSet
+kubectl get daemonsets                               # List daemonsets
+kubectl describe daemonset my-daemonset               # Describe daemonset
+kubectl delete daemonset my-daemonset                  # Delete daemonset
+
+---------------------------------------------------
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: my-daemonset
+spec:
+  selector:
+    matchLabels:
+      name: my-daemon-pod
+  template:
+    metadata:
+      labels:
+        name: my-daemon-pod
+    spec:
+      containers:
+      - name: my-daemon-container
+        image: myimage:latest
+
+------------------------------------------------------------------------------------------------------
+
+9️⃣ Job (Run pods that do work and exit)
+
+Runs pods for batch or one-time tasks.
+
+Ensures pods complete successfully (run to completion).
+
+Can run multiple pods in parallel or sequentially.
+
+After completion, pods terminate.
+
+---------------------------------------------------
+
+kubectl create -f job.                      # Create job
+kubectl get jobs                               # List jobs
+kubectl describe job my-job                      # Describe job
+kubectl delete job my-job                        # Delete job
+
+---------------------------------------------------
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: my-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: my-job-container
+        image: busybox
+        command: ["echo", "Hello from job"]
+      restartPolicy: Never                    # Pods won't restart automatically
+  backoffLimit: 4                            # Max retries if pod fails
+
+------------------------------------------------------------------------------------------------------
+
+🔟 CronJob (Run jobs on schedule)
+
+Runs Jobs periodically on a schedule (like cron).
+
+Runs jobs repeatedly at fixed times.
+
+Useful for backups, reports, cleanup.
+
+Uses standard cron syntax for schedule.
+
+---------------------------------------------------
+
+kubectl create -f cronjob.                      # Create cronjob
+kubectl get cronjobs                                # List cronjobs
+kubectl describe cronjob my-cronjob                  # Describe cronjob
+kubectl delete cronjob my-cronjob                    # Delete cronjob
+
+---------------------------------------------------
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: my-cronjob
+spec:
+  schedule: "*/5 * * * *"                  # Run every 5 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: my-cronjob-container
+            image: busybox
+            command: ["echo", "Hello from cronjob"]
+          restartPolicy: OnFailure          # Restart pod only on failure
+
+---------------------------------------------------
+
+1️⃣1️⃣ Horizontal Pod Autoscaler (HPA)
+
+Automatically scales pods based on CPU or custom metrics.
+
+Keeps pods running optimally with demand.
+
+Requires metrics-server to be installed in cluster.
+
+Useful to handle traffic spikes automatically.
+
+---------------------------------------------------
+
+kubectl autoscale deployment my-deploy --min=2 --max=5 --cpu-percent=50
+# autoscale: create autoscaler
+# deployment my-deploy: target deployment to autoscale
+# --min=2: minimum pods
+# --max=5: maximum pods
+# --cpu-percent=50: target average CPU usage percentage
+
+kubectl get hpa                          # List autoscalers
+kubectl describe hpa my-deploy          # Describe HPA status
+kubectl delete hpa my-deploy             # Delete autoscaler
+
+---------------------------------------------------
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: my-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: my-deploy
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+
+------------------------------------------------------------------------------------------------------
+
+1️⃣2️⃣ NodeSelector (Schedule pods on specific nodes)
+
+Simple way to assign pods to nodes by labels.
+
+Selects nodes with matching label key-values.
+
+Useful to control workload placement (e.g., GPU nodes).
+
+Only one label selector (no complex expressions).
+
+---------------------------------------------------
+
+# No direct command; specify in pod/deployment 
+kubectl get nodes --show-labels             # See node labels
+kubectl label nodes node1 disktype=ssd       # Add label to node
+
+---------------------------------------------------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: node-selector-pod
 spec:
   nodeSelector:
-    hardware: t2.medium
+    disktype: ssd               # Pod runs only on nodes labeled disktype=ssd
+  containers:
+  - name: nginx
+    image: nginx:latest
 
------------------------------------------------------------------------------------------------------------------------
-Namespace:
+------------------------------------------------------------------------------------------------------
 
-Provide logical isolation for Kubernetes resources — useful for teams, environments (dev, QA, prod).
+1️⃣3️⃣ ResourceQuota (Limits resource use per namespace)
 
-Help organize resources and apply policies like RBAC and ResourceQuotas.
+Controls max CPU, memory, storage per namespace.
 
-Default is default, but you can create custom ones for better separation.
+Prevents one team from using all cluster resources.
 
-----------------------------------------
-Create Namespace:
+Helps fair resource sharing in multi-tenant clusters.
 
-	kubectl create namespace namespace_name
+Defined per namespace.
 
-Get namespaces:
-	
-	kubectl get namespace
+---------------------------------------------------
 
-Delete a namespace:
+kubectl create -f resourcequota.               # Create quota
+kubectl get resourcequota                          # List quotas
+kubectl describe resourcequota compute-resources   # Show details
+kubectl delete resourcequota compute-resources     # Delete quota
 
-	kubectl delete namespace namespace_name
-
-Run Task With NameSpace:
-	
-	kubectl apply -f filename -n namespace_name
-
------------------------------------------------------------------------------------------------------------------------
-Resource Quota:
-
-Limits how much resources (CPU, memory, pods, etc.) a namespace can use.
-
-Helps control and distribute cluster resources fairly in multi-team setups.
-
-Defined per namespace using ResourceQuota objects.
-
-----------------------------------------
+---------------------------------------------------
 
 apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: dev-quota
+  name: compute-resources
   namespace: dev
 spec:
   hard:
-    pods: "10"
-    requests.cpu: "2"
-    requests.memory: 4Gi
-    limits.cpu: "4"
-    limits.memory: 8Gi
+    requests.cpu: "2"              # Max CPU cores requested
+    requests.memory: 4Gi           # Max memory requested
+    limits.cpu: "4"                # Max CPU cores limited
+    limits.memory: 8Gi             # Max memory limited
 
-This quota says:
+---------------------------------------------------
 
-Max 10 Pods in the dev namespace.
+1️⃣4️⃣ Service (Expose pods inside cluster or externally)
 
-Total requested CPU across all Pods ≤ 2 cores.
+Exposes pods as stable IP and DNS name.
 
-Total CPU limits across all Pods ≤ 4 cores.
+Types: ClusterIP (default), NodePort, LoadBalancer, ExternalName.
 
-Total requested and limited memory also capped.
+Balances traffic across pods.
 
-----------------------------------------
-How to Check Quota Usage?
+Essential for pod communication.
 
-kubectl get resourcequota -n dev
-kubectl describe resourcequota dev-quota -n dev
-	
+---------------------------------------------------
+
+kubectl expose pod nginx-pod --port=80 --target-port=80 --name=nginx-service --type=ClusterIP
+# expose: create service to expose pods
+# --port=80: port exposed by service
+# --target-port=80: port on pod container
+# --name=nginx-service: service name
+# --type=ClusterIP: internal cluster access only
+
+kubectl get svc                         # List services
+kubectl describe svc nginx-service      # Show details
+kubectl delete svc nginx-service        # Delete service
+
+---------------------------------------------------
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx                 # Select pods with label app=nginx
+  ports:
+  - protocol: TCP
+    port: 80                  # Service port
+    targetPort: 80            # Pod container port
+  type: ClusterIP             # Service type
+
+------------------------------------------------------------------------------------------------------
+
+
+1️⃣5️⃣ Ingress (Expose HTTP/HTTPS routes from outside)
+
+Manages external access to services (HTTP/S).
+
+Supports URL routing, SSL termination.
+
+Requires Ingress Controller installed in cluster.
+
+Helps manage multiple domain routes on single IP.
+
+---------------------------------------------------
+
+kubectl create -f ingress.             # Create ingress resource
+kubectl get ingress                        # List ingress resources
+kubectl describe ingress my-ingress        # Show details
+kubectl delete ingress my-ingress           # Delete ingress
+
+---------------------------------------------------
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: example.com
+    http:
+      paths:
+      - path: /app
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
