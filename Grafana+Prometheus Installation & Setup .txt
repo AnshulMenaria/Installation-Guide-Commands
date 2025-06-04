@@ -1,0 +1,101 @@
+Docker Containerized Setup
+
+1. Create folder structure
+
+mkdir -p prometheus-stack/prometheus
+cd prometheus-stack
+
+sudo vi prometheus/prometheus.yml
+
+------------------------------------------------------------ 
+
+2. Create prometheus.yml config (inside prometheus folder)
+
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+------------------------------------------------------------ 
+
+3. Create docker-compose.yml
+
+version: '3'
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+
+------------------------------------------------------------ 
+
+4. Start services
+
+docker-compose up -d
+
+------------------------------------------------------------ 
+
+5. Access UIs
+
+Prometheus: http://localhost:9090 (or your server IP)
+
+Grafana: http://localhost:3000
+
+Default login: admin / admin
+
+------------------------------------------------------------ 
+1. Add Prometheus as Data Source in Grafana
+
+Open Grafana UI: http://<host-ip>:3000
+
+Login (admin/admin by default)
+
+Click ⚙️ (Configuration) → Data Sources → Add data source
+
+Select Prometheus
+
+Set URL:
+
+If using Docker Compose: http://prometheus:9090 (service name)
+
+If accessing externally: http://<host-ip>:9090
+
+Click Save & Test → Should show “Data source is working”
+
+------------------------------------------------------------ 
+
+2. Import Node Exporter Dashboard
+
+In Grafana sidebar, click + (Create) → Import
+
+Import dashboard by ID (from Grafana dashboards website):
+
+Node Exporter Full: 1860
+
+Kubernetes cluster monitoring: 315 (optional)
+
+Paste the dashboard ID in Import via grafana.com field → Click Load
+
+Select Prometheus as data source → Import
+
+The dashboard will appear with live node metrics (CPU, Memory, Disk, Network)
