@@ -1,0 +1,75 @@
+🏗️ Architecture: Prometheus + Node Exporter + Grafana
+
+              +--------------------------+
+              |        Grafana           |
+              |  (Dashboard & UI Layer)  |
+              +-----------+--------------+
+                          |
+               [Queries Prometheus via HTTP API]
+                          |
+              +-----------v--------------+
+              |       Prometheus         |
+              | (Time-Series Database &  |
+              |      Monitoring Tool)    |
+              +-----------+--------------+
+                          |
+        [Scrapes metrics from Exporters]
+                          |
+              +-----------v--------------+
+              |     Node Exporter        |
+              | (Exposes Linux system    |
+              |   metrics as HTTP/JSON)  |
+              +--------------------------+
+
+---------------------------------------------------------------------------------------------------
+🔍 Component Definitions
+1. Node Exporter
+
+Purpose: Collects metrics from the host system (CPU, memory, disk, network, etc.)
+
+Runs on: The same or separate Linux machine/container
+
+Exposes metrics: On http://<host>:9100/metrics in plain text
+
+Used by: Prometheus scrapes this endpoint
+
+-------------------------------------------------
+2. Prometheus
+
+Purpose: Monitoring system that:
+
+Periodically pulls (scrapes) metrics from targets (like Node Exporter)
+
+Stores time-series data
+
+Provides a query language (PromQL) to fetch and analyze metrics
+
+Exposes UI: At http://<host>:9090
+
+Also used by: Grafana to pull time-series data
+
+-------------------------------------------------
+
+3. Grafana
+
+Purpose: Visualization and dashboard tool
+
+Connects to Prometheus as a Data Source
+
+Queries Prometheus API using PromQL
+
+Shows metrics as graphs, charts, gauges, etc.
+
+--------------------------------------------------------------------------------------------------
+
+📊 Typical Use Cases
+
+Use Case			Tool(s) Used
+
+Monitor CPU, RAM, disk, etc.	Node Exporter + Prometheus
+
+Store & query time-series data	Prometheus
+
+Build real-time dashboards	Grafana
+
+Alert if CPU > 90% for 5 min	Prometheus AlertManager + Grafana
