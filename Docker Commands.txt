@@ -3,13 +3,16 @@ Docker Commands:
 Pulling Docker Image:
 	docker pull image_name
 
+List Images:
+	Docker images
+
 Creating Container From Image:
 	docker run image_name /bin/bash
 
 Creating & Interacting Container:
 	docker run -it image_name /bin/bash
 
-Creating Container & Giving Name:
+Creating Container With Name:
 	docker run --name name image_name /bin/bash
 
 Exiting From Container:
@@ -27,8 +30,54 @@ Starting Container:
 Entering Container:
 	docker attach container_name
 
+Stopping Container:
+	docker stop container_name
+
 Deleting Container:
 	docker rm container_name
 
 Deleting Image:
 	docker rmi image_name
+---------------------------------------------------------------------------------------------------
+Creating Container With Same Network As Host:
+	docker run --network=host image_name /bin/bash
+
+Creating Docker File:
+	vi(editor) Dockerfile 
+
+Running Dockerfile:
+	docker build -t tag_name .  ("." fullstop for current directory)
+
+Exposing Ports For External Access When Creating Container:
+	docker run -it -p 8080:80 --name container_name image_name /bin/bash
+---------------------------------------------------------------------------------------------------
+Creating Container With Volume:
+	docker run -it --name container_name -v /volume_name image_name /bin/bash
+
+Sharing Volume With Container(Container To Container):
+	docker run -it --name container_name --volumes-from old_container_name(Which contains a volume)  privileged=true image_name /bin/bash 	
+
+Sharing Volume with Container(Host To Container):
+	docker run -it --name container_name /directory/to/share/from/host:/volume_name/to/create image_name /bin/bash
+---------------------------------------------------------------------------------------------------
+Creating Docker Network:
+	docker network create network_name
+
+Check Containers IP:
+	hostname -i
+
+Check All Networks:
+	docker network ls
+
+Creating Container With Specific Network:
+	docker run -it --name container_name --network network_name image_name 
+
+---------------------------------------------------------------------------------------------------
+Running Docker Compose file:
+	docker compose up
+
+Stopping Docker Containers Creted By Docker Compose File:
+	docker compose stop
+
+Terminating/Deleting Docker  Containers Creted By Docker Compose File:
+	docker compose down
